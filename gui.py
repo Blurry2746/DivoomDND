@@ -12,7 +12,9 @@ from PyQt5.QtCore import QTimer
 class DivoomDNDGUI(QMainWindow):
     def __init__(self):
         super().__init__()
-
+        self.setMinimumSize(400, 300)
+        self.resize(600, 400)
+        self.setWindowTitle("DivoomDND Status Manager")
         # Setup system tray icon using a default system icon
         default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
         self.tray_icon = QSystemTrayIcon(default_icon, self)
