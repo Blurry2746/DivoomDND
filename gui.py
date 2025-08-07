@@ -1,57 +1,66 @@
-#	PyQt-based system tray app for status control and settings
-from PyQt5 import QtWidgets, QtGui, QtCore
-from config import load_config, save_config
-from priority_manager import get_current_status
-from pixoo_handler import update_pixoo_display
+from PyQt5.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QSystemTrayIcon,
+    QMenu,
+    QStyle,
+    QMessageBox
+)
+from PyQt5.QtCore import QTimer
 
-class SystemTrayApp(QtWidgets.QSystemTrayIcon):
-    def __init__(self, app, icon, parent=None):
-        super().__init__(icon, parent)
-        self.app = app
-        self.setToolTip("Pixoo64 App")
-        self.config = load_config()
 
-        # Menu
-        menu = QtWidgets.QMenu(parent)
-        mh = menu.addAction("Set Manual High Priority")
-        mh.triggered.connect(self.set_manual_high)
-        ml = menu.addAction("Set Manual Low Priority")
-        ml.triggered.connect(self.set_manual_low)
-        quit_action = menu.addAction("Quit")
-        quit_action.triggered.connect(app.quit)
-        self.setContextMenu(menu)
+class DivoomDNDGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
 
-        # Status window
-        self.status_window = QtWidgets.QWidget()
-        self.status_window.setWindowTitle("Pixoo64 Status")
-        layout = QtWidgets.QVBoxLayout()
+        # Setup system tray icon using a default system icon
+        default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
+        self.tray_icon = QSystemTrayIcon(default_icon, self)
+        self.tray_icon.setToolTip("DivoomDND")
 
-        self.status_label = QtWidgets.QLabel("Current Status: None")
-        layout.addWidget(self.status_label)
+        # Create tray menu
+        self.tray_menu = QMenu(self)
+        self.tray_icon.activated.connect(self.on_tray_icon_activated)
+        exit_action = self.tray_menu.addAction("Exit")
+        exit_action.triggered.connect(QApplication.quit)
+        show_action = self.tray_menu.addAction("Show")
+        show_action.triggered.connect(self.show)
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.show()
 
-        self.gif_label = QtWidgets.QLabel()
-        self.movie = QtGui.QMovie("status.gif")  # Replace with actual path
-        self.gif_label.setMovie(self.movie)
-        self.movie.start()
-        layout.addWidget(self.gif_label)
-
-        self.status_window.setLayout(layout)
-        self.status_window.show()
-
-        # Timer for updates
-        self.timer = QtCore.QTimer()
-        self.timer.timeout.connect(self.update_status_display)
-        self.timer.start(5000)
-
-    def set_manual_high(self):
-        self.config['manual_priority'] = "highest"
-        save_config(self.config)
-
-    def set_manual_low(self):
-        self.config['manual_priority'] = "lowest"
-        save_config(self.config)
+        # Start the periodic update timer
+        self.start_timer()
 
     def update_status_display(self):
-        status = get_current_status()
-        self.status_label.setText(f"Current Status: {status}")
-        update_pixoo_display(status, "status.gif")
+        """
+        This method should contain the logic to update the Pixoo display
+        based on current status, priority, etc.
+        """
+        # TODO: Add your display update logic here
+
+    def start_timer(self):
+        """
+        Starts a QTimer that calls update_status_display every 5 seconds.
+        """
+        self.timer = QTimer(self)
+        self.timer.setInterval(5000)  # 5 seconds
+        self.timer.timeout.connect(self.update_status_display)
+        self.timer.start()
+
+    def closeEvent(self, event):
+        """
+        Override the window close event to hide the window instead of exiting the app.
+        """
+        event.ignore()
+        self.hide()
+
+    def on_tray_icon_activated(self, reason):
+        """
+        Handle tray icon activation (clicks).
+        """
+        if reason == QSystemTrayIcon.Trigger:  # Single click
+            self.showNormal()
+            self.activateWindow()
+        elif reason == QSystemTrayIcon.DoubleClick:  # Optional: handle double click separately
+            self.showNormal()
+            self.activateWindow()

@@ -1,12 +1,11 @@
-from PyQt5 import QtWidgets, QtGui
-from gui import SystemTrayApp
+import sys
+from PyQt5.QtWidgets import QApplication
+from gui import DivoomDNDGUI  # Make sure gui.py is in the same directory or properly imported
 
 def main():
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    icon = QtGui.QIcon()  # Add icon path if available
-    tray = SystemTrayApp(app, icon)
-    tray.show()
+    app = QApplication(sys.argv)
+    window = DivoomDNDGUI()
+    # window.show()  # Optional: show the main window if needed
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

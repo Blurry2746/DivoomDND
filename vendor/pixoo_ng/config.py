@@ -1,7 +1,7 @@
 """Configuration of a Pixoo device"""
 
-from find_device import get_pixoo_devices as _get_pixoo_devices
-import exceptions as _exceptions
+from .find_device import get_pixoo_devices as _get_pixoo_devices
+import vendor.pixoo_ng.exceptions  as _exceptions
 
 class PixooConfig:
     """Class representing the configuration of a device"""
