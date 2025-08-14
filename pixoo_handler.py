@@ -15,7 +15,7 @@ class PixooHandler:
             return  # Prevent reinitialization
 
         # Instantiate Pixoo only once
-        self.pixoo = Pixoo(*args, **kwargs)
+        self.pixoo = Pixoo(None,False,True)
 
         # Optional: initialize other state variables
         self._initialized = True
