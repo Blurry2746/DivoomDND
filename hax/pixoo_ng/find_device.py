@@ -6,7 +6,7 @@ them by the Pixoo library
 """
 import requests as _requests
 from .api import ApiResponse as _ApiResponse
-import vendor.pixoo_ng.exceptions  as _exceptions
+import hax.pixoo_ng.exceptions  as _exceptions
 
 
 def get_pixoo_devices():

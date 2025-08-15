@@ -1,5 +1,5 @@
 #	Handles communication with Pixoo64
-from vendor.pixoo_ng import Pixoo
+from hax.pixoo_ng import Pixoo, simulator, SimulatorConfig
 
 
 class PixooHandler:
@@ -15,7 +15,7 @@ class PixooHandler:
             return  # Prevent reinitialization
 
         # Instantiate Pixoo only once
-        self.pixoo = Pixoo(None,False,True)
+        self.pixoo = Pixoo(None,False,True,SimulatorConfig(8))
 
         # Optional: initialize other state variables
         self._initialized = True
