@@ -37,11 +37,11 @@ class DivoomDNDGUI(QMainWindow):
         self.start_timer()
 
     def update_status_display(self):
-        self.pixoo_handler.display_status("Status update message")
+        self.pixoo_handler.display_status("TEST message")
 
     def start_timer(self):
         self.timer = QTimer(self)
-        self.timer.setInterval(5000)
+        self.timer.setInterval(1000)
         self.timer.timeout.connect(self.update_status_display)
         self.timer.start()
 

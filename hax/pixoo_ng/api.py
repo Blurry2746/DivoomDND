@@ -1,7 +1,7 @@
 #!/bin/python3
 """ Better interaction with request module and pixoo API """
 import requests
-import hax.pixoo_ng.exceptions as _exceptions
+from . import exceptions  as _exceptions
 
 
 def _snake_to_camel(string):

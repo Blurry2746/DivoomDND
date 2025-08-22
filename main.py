@@ -5,7 +5,7 @@ from gui import DivoomDNDGUI  # Make sure gui.py is in the same directory or pro
 def main():
     app = QApplication(sys.argv)
     window = DivoomDNDGUI()
-    # window.show()  # Optional: show the main window if needed
+    window.show()  # Optional: show the main window if needed
     sys.exit(app.exec_())
 
 if __name__ == "__main__":

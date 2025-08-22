@@ -1,5 +1,8 @@
-#	Handles communication with Pixoo64
-from hax.pixoo_ng import Pixoo, simulator, SimulatorConfig
+from hax.pixoo_ng import Pixoo
+from hax.pixoo_ng.config import PixooConfig
+from hax.pixoo_ng.simulator import SimulatorConfig
+from hax.pixoo_ng.exceptions import NoPixooDevicesFound
+
 
 
 class PixooHandler:
@@ -7,36 +10,33 @@ class PixooHandler:
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
-            cls._instance = super(PixooHandler, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, *args, **kwargs):
-        if getattr(self, '_initialized', False):
-            return  # Prevent reinitialization
+    def __init__(self):
+        if hasattr(self, 'initialized'):
+            return
+        self.simulator_mode = False
 
-        # Instantiate Pixoo only once
-        self.pixoo = Pixoo(None,False,True,SimulatorConfig(8))
+        try:
+            pixoo_config = PixooConfig()
+        except NoPixooDevicesFound:
+            pixoo_config = PixooConfig(address="simulated", size=64)
+            self.simulator_mode = True
 
-        # Optional: initialize other state variables
-        self._initialized = True
+        self.pixoo = Pixoo(pixoo_config,True,self.simulator_mode,SimulatorConfig(8))
+        self.initialized = True
+
+    def is_simulator(self):
+        return self.simulator_mode
 
     def display_status(self, status_text):
-        """
-        Display a status message on the Pixoo device.
-        """
-        self.pixoo.draw_text(status_text)
-        self.pixoo.push()
+        if not self.pixoo:
 
-    def display_gif(self, gif_path):
-        """
-        Display a GIF on the Pixoo device.
-        """
-        self.pixoo.draw_gif(gif_path)
-        self.pixoo.push()
+            return
 
-    def clear_display(self):
-        """
-        Clear the Pixoo display.
-        """
-        self.pixoo.clear()
-        self.pixoo.push()
+        try:
+            self.pixoo.draw_text(status_text)
+            self.pixoo.push()
+        except Exception as e:
+            print(f"Failed to display status: {e}")

@@ -1,7 +1,7 @@
 """Configuration of a Pixoo device"""
 
 from .find_device import get_pixoo_devices as _get_pixoo_devices
-import hax.pixoo_ng.exceptions  as _exceptions
+from . import exceptions  as _exceptions
 
 class PixooConfig:
     """Class representing the configuration of a device"""
@@ -19,7 +19,7 @@ class PixooConfig:
         pixoo_device = pixoo_devices[0]  # Just take first (and unique) item
         dev_name = pixoo_device["DeviceName"]
         dev_ip = pixoo_device["DevicePrivateIP"]
-        print(f" Pixo Device auto identified!!! DeviceName: {dev_name} (IP: {dev_ip})")
+        print(f" Pixoo Device auto identified!!! DeviceName: {dev_name} (IP: {dev_ip})")
         return dev_ip
 
 
