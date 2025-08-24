@@ -3,7 +3,11 @@ from PyQt5.QtWidgets import (
     QMainWindow,
     QSystemTrayIcon,
     QMenu,
-    QStyle
+    QStyle,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget
 )
 from PyQt5.QtCore import QTimer
 from pixoo_handler import PixooHandler  # Singleton PixooHandler
@@ -30,6 +34,20 @@ class DivoomDNDGUI(QMainWindow):
         self.tray_icon.activated.connect(self.on_tray_icon_activated)
         self.tray_icon.show()
 
+        # Add text input and button
+        self.text_input = QLineEdit(self)
+        self.update_button = QPushButton('Update Text', self)
+        self.update_button.clicked.connect(self.handle_update_text)
+
+        # Add to layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_input)
+        layout.addWidget(self.update_button)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
         # Use singleton PixooHandler
         self.pixoo_handler = PixooHandler()
 
@@ -38,6 +56,10 @@ class DivoomDNDGUI(QMainWindow):
 
     def update_status_display(self):
         self.pixoo_handler.display_status("TEST message")
+
+    def handle_update_text(self):
+        message = self.text_input.text()
+        self.pixoo_handler.display_status(message)
 
     def start_timer(self):
         self.timer = QTimer(self)
