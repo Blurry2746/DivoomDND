@@ -358,8 +358,9 @@ class Pixoo(PixooBaseApi):
 
 
         0:play tf’s file 1:play tf’s folder 2:play net file"""
-
-        # to use 0, need to set up http server to copy gifs to Pixoo SD card using save_gif_to_pixoo
+        # to play file using 0 use path/file.gif
+        # to use 2, need to set up http server to copy gifs to Pixoo SD card using save_gif_to_pixoo
+        # currently no known way to enumerate files already saved to pixoo...
 
         # This won't be possible
 
@@ -385,21 +386,20 @@ class Pixoo(PixooBaseApi):
 
             self,
 
-            net_name,
+            URL,
 
-            local_name
+            local_path_and_name
 
     ):
 
         # tested on Pixoo64 with removable SD card
 
         """Function to save hosted gif files to local Pixoo storage. Use play_pixoo_gif to play
-
-
         Can Specify a new Folder and the Pixoo64 will create it"""
+        #currently no known way to enumerate files already saved to pixoo...
+
 
         # This won't be possible
-
         if self.simulated:
             return
 

@@ -16,6 +16,7 @@ class DivoomDNDGUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
+
         self.setWindowTitle("DivoomDND Status Manager")
         self.setMinimumSize(400, 300)
         self.resize(600, 400)
@@ -38,11 +39,18 @@ class DivoomDNDGUI(QMainWindow):
         self.text_input = QLineEdit(self)
         self.update_button = QPushButton('Update Text', self)
         self.update_button.clicked.connect(self.handle_update_text)
+        self.save_button = QPushButton('save SD gif', self)
+        self.play_button.clicked.connect(self.save_gif)
+        self.play_button = QPushButton('Play SD gif', self)
+        self.play_button.clicked.connect(self.play_gif)
+
 
         # Add to layout
         layout = QVBoxLayout()
         layout.addWidget(self.text_input)
         layout.addWidget(self.update_button)
+        layout.addWidget(self.save_button)
+        layout.addWidget(self.play_button)
 
         container = QWidget()
         container.setLayout(layout)
@@ -52,19 +60,25 @@ class DivoomDNDGUI(QMainWindow):
         self.pixoo_handler = PixooHandler()
 
         # Start periodic updates
-        self.start_timer()
+#       self.start_timer()
+
+    def save_gif(self):
+        self.pixoo_handler.save_gif_to_pixoo()
+
+    def play_gif(self):
+        self.pixoo_handler.display_status_gif()
 
     def update_status_display(self):
         self.pixoo_handler.display_status("TEST message")
 
     def handle_update_text(self):
         message = self.text_input.text()
-        self.pixoo_handler.display_status(message)
+        self.pixoo_handler.display_status(status_message = message)
 
     def start_timer(self):
         self.timer = QTimer(self)
         self.timer.setInterval(1000)
-        self.timer.timeout.connect(self.update_status_display)
+        self.timer.timeout.connect(self.handle_update_text)
         self.timer.start()
 
     def closeEvent(self, event):
