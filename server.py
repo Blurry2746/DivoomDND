@@ -1,4 +1,5 @@
 import os
+import socket
 import threading
 import logging
 from http.server import HTTPServer, SimpleHTTPRequestHandler
@@ -6,6 +7,7 @@ from pathlib import Path
 import signal
 import sys
 from contextlib import contextmanager
+from PyQt5.QtCore import QThread, pyqtSignal
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -132,6 +134,53 @@ class ServerThread(threading.Thread):
         return None
 
 
+class ServerWorker(QThread):
+    """Background thread for server operations - handles Qt integration"""
+    server_started = pyqtSignal(str)  # URL
+    server_stopped = pyqtSignal()
+    server_error = pyqtSignal(str)
+
+    def __init__(self):
+        super().__init__()
+        self.server = None
+        self.operation = None
+        self.directory = None
+        self.port = None
+
+    def start_server(self, directory, port):
+        """Queue server start operation"""
+        self.operation = "start"
+        self.directory = directory
+        self.port = port
+        self.start()
+
+    def stop_server(self):
+        """Queue server stop operation"""
+        self.operation = "stop"
+        self.start()
+
+    def run(self):
+        """Execute server operation in background"""
+        if self.operation == "start":
+            try:
+                self.server = ServerThread(self.directory, self.port)
+                self.server.start()
+                self.server.wait_for_startup()
+                url = f"http://localhost:{self.port}"
+                self.server_started.emit(url)
+            except Exception as e:
+                self.server_error.emit(str(e))
+
+        elif self.operation == "stop":
+            try:
+                if self.server:
+                    self.server.stop()
+                    self.server = None
+                self.server_stopped.emit()
+            except Exception as e:
+                self.server_error.emit(str(e))
+
+
 @contextmanager
 def http_server(directory=None, port=8000, bind_address='127.0.0.1'):
     """Context manager for HTTP server - ensures cleanup"""
@@ -146,9 +195,6 @@ def http_server(directory=None, port=8000, bind_address='127.0.0.1'):
 
 # Example usage and signal handling
 if __name__ == "__main__":
-    import socket
-
-
     # Handle Ctrl+C gracefully
     def signal_handler(signum, frame):
         logger.info("Received interrupt signal, shutting down...")
@@ -172,13 +218,3 @@ if __name__ == "__main__":
         pass
     except Exception as e:
         logger.error(f"Server failed to start: {e}")
-
-    # Example 2: Manual server management
-    # server = ServerThread(directory="./public", port=8080)
-    # try:
-    #     server.start()
-    #     server.wait_for_startup()
-    #     print(f"Server running at {server.url}")
-    #     input("Press Enter to stop server...")
-    # finally:
-    #     server.stop()
