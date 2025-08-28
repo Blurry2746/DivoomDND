@@ -19,6 +19,7 @@ from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QFont
 from pixoo_handler import PixooHandler
 from server import ServerWorker
+from config import get_settings, save_settings
 import os
 from pathlib import Path
 
@@ -27,9 +28,23 @@ class DivoomDNDGUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        # Get settings instance
+        self.settings = get_settings()
+
         self.setWindowTitle("DivoomDND Status Manager")
+
+        # Restore window size and position
+        width = self.settings.get('gui.window_width', 600)
+        height = self.settings.get('gui.window_height', 400)
         self.setMinimumSize(400, 300)
-        self.resize(600, 400)
+        self.resize(width, height)
+
+        # Restore window position if saved
+        if self.settings.get('gui.remember_window_position', True):
+            x = self.settings.get('gui.window_x')
+            y = self.settings.get('gui.window_y')
+            if x is not None and y is not None:
+                self.move(x, y)
 
         # Setup system tray icon
         default_icon = QApplication.style().standardIcon(QStyle.SP_ComputerIcon)
@@ -101,7 +116,9 @@ class DivoomDNDGUI(QMainWindow):
         # Directory selection
         dir_layout = QHBoxLayout()
         self.directory_input = QLineEdit(self)
-        self.directory_input.setText(str(Path.cwd()))
+        # Load saved directory or use current working directory
+        saved_directory = self.settings.get('server.directory', str(Path.cwd()))
+        self.directory_input.setText(saved_directory)
         self.browse_button = QPushButton('Browse', self)
         self.browse_button.clicked.connect(self.browse_directory)
 
@@ -115,7 +132,9 @@ class DivoomDNDGUI(QMainWindow):
 
         self.port_spinbox = QSpinBox(self)
         self.port_spinbox.setRange(1024, 65535)
-        self.port_spinbox.setValue(8000)
+        # Load saved port or use default
+        saved_port = self.settings.get('server.port', 8000)
+        self.port_spinbox.setValue(saved_port)
 
         settings_layout.addWidget(QLabel("Port:"))
         settings_layout.addWidget(self.port_spinbox)
@@ -162,6 +181,9 @@ class DivoomDNDGUI(QMainWindow):
         )
         if directory:
             self.directory_input.setText(directory)
+            # Save the selected directory
+            self.settings.set('server.directory', directory)
+            save_settings()
 
     def start_server(self):
         """Start the HTTP server"""
@@ -175,6 +197,14 @@ class DivoomDNDGUI(QMainWindow):
             return
 
         port = self.port_spinbox.value()
+
+        # Save server settings
+        self.settings.update_section('server', {
+            'directory': directory,
+            'port': port
+        })
+        save_settings()
+
         self.log_message(f"Starting server on port {port}...")
         self.start_server_button.setEnabled(False)
 
@@ -241,21 +271,37 @@ class DivoomDNDGUI(QMainWindow):
         """Handle text update button click"""
         message = self.text_input.text()
         if not message:
-            message = "Hello Pixoo!"
+            message = self.settings.get('pixoo.default_message', 'Hello Pixoo!')
         try:
             self.pixoo_handler.display_status(status_message=message)
             self.log_message(f"Updated Pixoo: '{message}'")
         except Exception as e:
             self.log_message(f"Error updating Pixoo: {e}")
 
+    def save_window_state(self):
+        """Save current window position and size"""
+        if self.settings.get('gui.remember_window_position', True):
+            self.settings.update_section('gui', {
+                'window_width': self.width(),
+                'window_height': self.height(),
+                'window_x': self.x(),
+                'window_y': self.y()
+            })
+            save_settings()
+
     def cleanup_and_exit(self):
         """Clean shutdown - stop server before exiting"""
+        # Save window state
+        self.save_window_state()
+
         if self.server_running:
             self.server_worker.stop_server()
         QApplication.quit()
 
     def closeEvent(self, event):
         """Override close event to hide to tray instead of exit"""
+        # Save window state when hiding
+        self.save_window_state()
         event.ignore()
         self.hide()
 
