@@ -13,15 +13,22 @@ from PyQt5.QtWidgets import (
     QSpinBox,
     QGroupBox,
     QFileDialog,
-    QTextEdit
+    QTextEdit,
+    QListWidget,
+    QListWidgetItem,
+    QSplitter,
+    QTabWidget,
+    QComboBox
 )
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QFont
 from pixoo_handler import PixooHandler
 from server import ServerWorker
 from config import get_settings, save_settings
+from gif_manager import get_gif_manager
 import os
 from pathlib import Path
+
 
 
 class DivoomDNDGUI(QMainWindow):
@@ -60,11 +67,14 @@ class DivoomDNDGUI(QMainWindow):
         self.tray_icon.activated.connect(self.on_tray_icon_activated)
         self.tray_icon.show()
 
+
+
+        # Use singleton PixooHandler and GIF manager
+        self.pixoo_handler = PixooHandler()
+        self.gif_manager = get_gif_manager()
+
         # Initialize components
         self.setup_ui()
-
-        # Use singleton PixooHandler
-        self.pixoo_handler = PixooHandler()
 
         # Server worker thread
         self.server_worker = ServerWorker()
@@ -98,14 +108,53 @@ class DivoomDNDGUI(QMainWindow):
 
         # GIF controls
         gif_layout = QHBoxLayout()
-        self.save_button = QPushButton('Save SD GIF', self)
-        self.save_button.clicked.connect(self.save_gif)
-        self.play_button = QPushButton('Play SD GIF', self)
-        self.play_button.clicked.connect(self.play_gif)
 
-        gif_layout.addWidget(self.save_button)
-        gif_layout.addWidget(self.play_button)
+        # Upload GIF section
+        upload_layout = QVBoxLayout()
+        self.gif_url_input = QLineEdit(self)
+        self.gif_url_input.setPlaceholderText("GIF URL (e.g., http://localhost:8000/mygif.gif)")
+        self.gif_path_input = QLineEdit(self)
+        self.gif_path_input.setPlaceholderText("Pixoo path (e.g., test/mygif.gif)")
+
+        upload_input_layout = QHBoxLayout()
+        upload_input_layout.addWidget(QLabel("URL:"))
+        upload_input_layout.addWidget(self.gif_url_input)
+        upload_layout.addLayout(upload_input_layout)
+
+        path_input_layout = QHBoxLayout()
+        path_input_layout.addWidget(QLabel("Path:"))
+        path_input_layout.addWidget(self.gif_path_input)
+        upload_layout.addLayout(path_input_layout)
+
+        self.save_button = QPushButton('Upload GIF to Pixoo', self)
+        self.save_button.clicked.connect(self.save_gif)
+        upload_layout.addWidget(self.save_button)
+
+        # Play GIF section
+        play_layout = QVBoxLayout()
+        self.gif_selector = QComboBox(self)
+        self.gif_selector.setEditable(True)
+        self.gif_selector.setPlaceholderText("Select or enter Pixoo path...")
+        play_layout.addWidget(QLabel("Play GIF:"))
+        play_layout.addWidget(self.gif_selector)
+
+        self.play_button = QPushButton('Play Selected GIF', self)
+        self.play_button.clicked.connect(self.play_gif)
+        play_layout.addWidget(self.play_button)
+
+        # Add both sections to main layout
+        gif_layout.addLayout(upload_layout)
+        gif_layout.addLayout(play_layout)
         pixoo_layout.addLayout(gif_layout)
+
+        # GIF tracking list
+        self.gif_list = QListWidget(self)
+        self.gif_list.setMaximumHeight(100)
+        pixoo_layout.addWidget(QLabel("Tracked GIFs:"))
+        pixoo_layout.addWidget(self.gif_list)
+
+        # Refresh GIF list initially
+        self.refresh_gif_list()
 
         main_layout.addWidget(pixoo_group)
 
@@ -251,21 +300,79 @@ class DivoomDNDGUI(QMainWindow):
         scrollbar = self.log_display.verticalScrollBar()
         scrollbar.setValue(scrollbar.maximum())
 
+    def refresh_gif_list(self):
+        """Refresh the list of tracked GIFs"""
+        self.gif_list.clear()
+        self.gif_selector.clear()
+
+        tracked_gifs = self.gif_manager.get_all_gifs()
+
+        if not tracked_gifs:
+            item = QListWidgetItem("No GIFs uploaded yet")
+            item.setFlags(item.flags() & ~Qt.ItemIsSelectable)
+            self.gif_list.addItem(item)
+            return
+
+        # Populate list widget
+        for gif in tracked_gifs:
+            status_icon = "✓" if gif.local_exists else "✗"
+            display_text = f"{status_icon} {gif.local_filename} -> {gif.pixoo_path}"
+
+            item = QListWidgetItem(display_text)
+            if not gif.local_exists:
+                item.setForeground(Qt.red)
+            self.gif_list.addItem(item)
+
+        # Populate combo box
+        for gif in tracked_gifs:
+            self.gif_selector.addItem(gif.pixoo_path)
+
     def save_gif(self):
-        """Save GIF to Pixoo"""
+        """Upload GIF to Pixoo and track it"""
+        gif_url = self.gif_url_input.text().strip()
+        pixoo_path = self.gif_path_input.text().strip()
+
+        if not gif_url:
+            self.log_message("ERROR: Please enter a GIF URL")
+            return
+
+        if not pixoo_path:
+            # Auto-generate path from URL
+            filename = os.path.basename(gif_url.split('?')[0])  # Remove query params
+            if not filename.endswith('.gif'):
+                filename += '.gif'
+            pixoo_path = f"uploaded/{filename}"
+            self.gif_path_input.setText(pixoo_path)
+
         try:
-            self.pixoo_handler.save_gif_to_pixoo()
-            self.log_message("GIF saved to Pixoo")
+            success = self.pixoo_handler.save_gif_to_pixoo(gif_url, pixoo_path)
+            if success:
+                self.log_message(f"✓ Uploaded GIF: {gif_url} -> {pixoo_path}")
+                self.refresh_gif_list()
+                # Clear inputs
+                self.gif_url_input.clear()
+                self.gif_path_input.clear()
+            else:
+                self.log_message("✗ Failed to upload GIF")
         except Exception as e:
-            self.log_message(f"Error saving GIF: {e}")
+            self.log_message(f"✗ Error uploading GIF: {e}")
 
     def play_gif(self):
-        """Play GIF on Pixoo"""
+        """Play selected GIF on Pixoo"""
+        pixoo_path = self.gif_selector.currentText().strip()
+
+        if not pixoo_path:
+            self.log_message("ERROR: Please select or enter a Pixoo path")
+            return
+
         try:
-            self.pixoo_handler.display_status_gif()
-            self.log_message("Playing GIF on Pixoo")
+            success = self.pixoo_handler.display_status_gif(pixoo_path)
+            if success:
+                self.log_message(f"✓ Playing GIF: {pixoo_path}")
+            else:
+                self.log_message("✗ Failed to play GIF")
         except Exception as e:
-            self.log_message(f"Error playing GIF: {e}")
+            self.log_message(f"✗ Error playing GIF: {e}")
 
     def handle_update_text(self):
         """Handle text update button click"""

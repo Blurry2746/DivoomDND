@@ -42,7 +42,8 @@ class SettingsManager:
                 'simulator_scale': 8,
                 'auto_detect_device': True,
                 'device_ip': None,
-                'brightness': 100
+                'brightness': 100,
+                'uploaded_gifs': []  # Track uploaded GIFs
             }
         }
         self.load()

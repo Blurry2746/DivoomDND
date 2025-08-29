@@ -383,15 +383,10 @@ class Pixoo(PixooBaseApi):
         self.__send_buffer()
 
     def save_gif_to_pixoo(
-
             self,
-
-            URL,
-
-            local_path_and_name
-
+            net_name,
+            local_name
     ):
-
         # tested on Pixoo64 with removable SD card
 
         """Function to save hosted gif files to local Pixoo storage. Use play_pixoo_gif to play
@@ -404,13 +399,9 @@ class Pixoo(PixooBaseApi):
             return
 
         self.send_command(
-
             command="Device/SaveTFGif",
-
             net_name=net_name,
-
             local_name=local_name
-
         )
 
     def send_text(

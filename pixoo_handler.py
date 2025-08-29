@@ -2,6 +2,7 @@ from hax.pixoo_ng import Pixoo
 from hax.pixoo_ng.config import PixooConfig
 from hax.pixoo_ng.simulator import SimulatorConfig
 from hax.pixoo_ng.exceptions import NoPixooDevicesFound
+from gif_manager import get_gif_manager, track_uploaded_gif
 
 
 class PixooHandler:
@@ -17,6 +18,7 @@ class PixooHandler:
             return
         self.simulator_mode = False
         self.pixoo = None
+        self.gif_manager = get_gif_manager()  # Add GIF manager
 
         try:
             pixoo_config = PixooConfig()
